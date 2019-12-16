@@ -1,0 +1,20 @@
+{
+    "name": "gilberg-vrn/php-calque",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dmitry Emelyanov",
+            "email": "gilberg.vrn@gmail.com"
+        }
+    ],
+    "description": "Pure PHP implementing an FST (finite state transducer)",
+    "minimum-stability": "dev",
+    "require": {
+    },
+    "autoload": {
+        "psr-4": {
+            "calque\\": "src/"
+        }
+    }
+}
