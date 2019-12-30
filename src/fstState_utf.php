@@ -94,6 +94,9 @@ class fstState_utf
      */
     public function TransitionFor($b)
     {
+        if (!isset($this->data[$this->top])) {
+            throw new \Exception();
+        }
         if ($this->isEncodedSingle()) {
             if ($this->singleTransChar == $b) {
                 return [0, $this->singleTransAddr, $this->singleTransOut];
@@ -122,6 +125,8 @@ class fstState_utf
 
     private function encodeTransKeys($start, $size)
     {
+        return substr($this->data, $start, $size);
+
         $transKeys = '';
         for ($i = $start; $i < $start + $size; $i++) {
             $char = $this->data[$i];
@@ -197,17 +202,19 @@ class fstState_utf
 
     public function at($data, int $addr)
     {
-        if ($addr == builder::EMPTY_ADDR) {
-            return $this->atZero();
-        } elseif ($addr == builder::NONE_ADDR) {
-            return $this->atNone();
-        }
         if ($addr > strlen($data) || $addr < 16) {
             return sprintf("invalid address %d/%d", $addr, strlen($data));
         }
         $this->top = $addr;
         $this->bottom = $addr;
         $this->data = $data;
+
+        if ($addr == builder::EMPTY_ADDR) {
+            return $this->atZero();
+        } elseif ($addr == builder::NONE_ADDR) {
+            return $this->atNone();
+        }
+
         if ($this->isEncodedSingle()) {
             $r = $this->atSingle($data, $addr);
         } else {
@@ -272,7 +279,7 @@ class fstState_utf
             $this->singleTransOut = 0;
         } else {
             $this->bottom--; // extra byte with pack sizes
-            list($this->transSize, $this->outSize) = pack::decodePackSize($data[$this->bottom]);
+            [$this->transSize, $this->outSize] = pack::decodePackSize($data[$this->bottom]);
             $this->bottom -= $this->transSize; // exactly one trans
             $this->singleTransAddr = pack::readPackedUint(substr($data, $this->bottom, $this->transSize));
             if ($this->outSize > 0) {
@@ -339,8 +346,9 @@ class fstState_utf
         // +===+===+===+===+===+===+===+===+
 
         // handle multiple transitions case
-        $this->final = (ord($data[$this->top]) & encoder_utf::STATE_FINAL) > 0;
-        $this->numTrans = ord($data[$this->top]) & pack::MAX_NUM_TRANS;
+        $top = ord($data[$this->top]);
+        $this->final = ($top & encoder_utf::STATE_FINAL) > 0;
+        $this->numTrans = $top & pack::MAX_NUM_TRANS;
         if ($this->numTrans == 0) {
             $this->bottom--; // extra byte for number of trans
             $this->numTrans = ord($data[$this->bottom]);
@@ -350,7 +358,7 @@ class fstState_utf
             }
         }
         $this->bottom--; // extra byte with pack sizes
-        list($this->transSize, $this->outSize) = pack::decodePackSize($data[$this->bottom]);
+        [$this->transSize, $this->outSize] = pack::decodePackSize($data[$this->bottom]);
 
         if ($this->numTrans) {
             $this->bottom -= $this->numTrans ? 1 : 0;
@@ -389,7 +397,7 @@ class fstState_utf
 
         for ($i = 0; $i < $this->numTrans; $i++) {
             $transChar = $this->TransitionAt($i);
-            list(, $transDest, $transOut) = $this->TransitionFor($transChar);
+            [, $transDest, $transOut] = $this->TransitionFor($transChar);
             $out = '';
             if ($transOut != 0) {
                 $out = sprintf('/%d', $transOut);

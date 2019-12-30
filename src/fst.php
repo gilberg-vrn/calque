@@ -59,20 +59,26 @@ digraph automaton {
         $total = 0;
         $curr = $this->decoder->getRoot();
         /** @var fstState $state */
-        list($state, $err) = $this->decoder->stateAt($curr, $prealloc);
+        [$state, $err] = $this->decoder->stateAt($curr, $prealloc);
         if ($err != null) {
             return [0, false, $err];
         }
-        $inputLen = mb_strlen($input);
 
-        $chars = preg_split('//u', $input, -1, PREG_SPLIT_NO_EMPTY);
+        if (is_array($input)) {
+            $inputLen = count($input);
+            $chars = $input;
+        } else {
+            $inputLen = mb_strlen($input);
+            $chars = preg_split('//u', $input, -1, PREG_SPLIT_NO_EMPTY);
+        }
+
         for ($i = 0; $i < $inputLen; $i++) {
-            list(, $curr, $output) = $state->TransitionFor($chars[$i]);
+            [ , $curr, $output ] = $state->TransitionFor($chars[$i]);
             if ($curr == builder::NONE_ADDR) {
                 return [0, false, null];
             }
 
-            list($state, $err) = $this->decoder->stateAt($curr, $state);
+            [$state, $err] = $this->decoder->stateAt($curr, $state);
             if ($err != null) {
                 return [0, false, $err];
             }

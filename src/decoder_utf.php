@@ -42,7 +42,6 @@ class decoder_utf
 
     public function stateAt(int $addr, fstState $prealloc = null)
     {
-
         $state = new fstState_utf();
 
         $err = $state->at($this->data, $addr);
